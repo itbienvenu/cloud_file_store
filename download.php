@@ -13,4 +13,3 @@ if (!isset($_GET['token']) || empty($_GET['token'])) {
 $token = $_GET['token'];
 $apiController = new ApiController();
 $apiController->handleDownload($token);
-?>

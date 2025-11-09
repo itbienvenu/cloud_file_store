@@ -1,5 +1,4 @@
 <?php
-// config.php - Core configuration and constants
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 define('BASE_DIR', dirname(dirname(__FILE__))); // Points to project root
@@ -15,7 +14,7 @@ function getDbConnection() {
     static $db = null;
     if ($db === null) {
         try {
-            $db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
+            $db = new PDO('mysql:host=127.0.0.1;dbname=' . DB_NAME . ';charset=utf8', DB_USER, DB_PASS);
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
             die('Database connection failed: ' . $e->getMessage());
@@ -23,6 +22,7 @@ function getDbConnection() {
     }
     return $db;
 }
+
 
 // Security utilities
 class Security {
@@ -427,27 +427,36 @@ class ApiController {
     }
     
     // Handle user login
-    public function handleLogin() {
-        if (!isset($_POST['username']) || !isset($_POST['password'])) {
-            return $this->jsonResponse(['error' => 'Missing username or password'], 400);
-        }
-        
-        $username = $_POST['username'];
-        $password = $_POST['password'];
-        
-        $session = $this->auth->login($username, $password);
-        
-        if (!$session) {
-            return $this->jsonResponse(['error' => 'Invalid username or password'], 401);
-        }
-        
-        return $this->jsonResponse([
-            'success' => true,
-            'user_id' => $session['user_id'],
-            'username' => $session['username'],
-            'token' => $session['token']
-        ]);
+public function handleLogin() {
+    if (!isset($_POST['username']) || !isset($_POST['password'])) {
+        $this->jsonResponse(['error' => 'Missing username or password'], 400);
     }
+
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+
+    $session = $this->auth->login($username, $password);
+
+    if (!$session) {
+        $this->jsonResponse(['error' => 'Invalid username or password'], 401);
+    }
+
+    $this->jsonResponse([
+        'success' => true,
+        'user_id' => $session['user_id'],
+        'username' => $session['username'],
+        'token' => $session['token']
+    ]);
+}
+
+
+private function jsonResponse(array $data, int $statusCode = 200) {
+    http_response_code($statusCode);
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+
     
     // Handle user logout
     public function handleLogout() {
@@ -494,14 +503,7 @@ class ApiController {
         return null;
     }
     
-    // Helper function to return JSON response
-    private function jsonResponse($data, $statusCode = 200) {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-    
+   
     // Helper function to get base URL
     private function getBaseUrl() {
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
